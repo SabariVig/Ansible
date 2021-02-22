@@ -1,0 +1,52 @@
+---
+- name: Download Extract Install Apache Solar
+  hosts: all
+  become: true
+
+  vars_files:
+      - vars.yaml
+
+  pre_tasks:
+      - name: Update APT Caches If Invalid
+        apt:
+            update_cache: true
+            cache_valid_time: 3600
+  handlers:
+      - name: restart solr
+        service:
+            name: solr
+            state: restarted
+  tasks: 
+    - name: Install Java If Not Found 
+      apt:
+          name: openjdk-11-jdk-headless
+          state: present
+
+    - name: Download Solr
+      get_url:
+          url: "https://mirrors.estointernet.in/apache/lucene/solr/{{ solr.version }}/solr-{{ solr.version }}.tgz"
+          dest: "{{ download.dir }}/solr-{{ solr.version }}.tgz"
+          checksum: "{{ solr.checksum }}"
+
+    - name: Extract Solr
+      unarchive:
+          src: "{{ download.dir }}/solr-{{ solr.version }}.tgz"
+          dest: "{{ download.dir }}"
+          remote_src: true
+          creates: "{{ download.dir }}/solr-{{ solr.version }}/README.txt"
+
+    - name: Install Solr
+      command: >
+          {{ download.dir }}/solr-{{ solr.version }}/bin/install_solr_service.sh
+          {{ download.dir }}/solr-{{ solr.version }}.tgz
+          -i /opt
+          -d /var/solr
+          -u solr
+          -s solr
+          -p 8983
+          creates={{ solr.dir }}/bin/solr
+    - name: Enable Solr Service 
+      service:
+          name: solr
+          state: started
+          enabled: yes

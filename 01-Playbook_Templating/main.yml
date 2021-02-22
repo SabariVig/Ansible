@@ -1,0 +1,30 @@
+---
+- hosts: all
+  become: true
+
+  tasks:
+      - name: Install Nginx 
+        apt:
+          name: nginx
+          state: present
+          
+      - name: Copy Configuration Files 
+        copy:
+            src: "{{ item.src }}"
+            dest: "{{ item.dest }}"
+            owner: root
+            group: root
+            mode: 0664
+        with_items: 
+            - src: nginx.conf
+              dest: /etc/nginx/nginx.conf
+            - src: index.html
+              dest: /var/www/html/index.html
+      - name: Make Sure Nginx Is Started
+        service: 
+            name: nginx 
+            state: started 
+
+
+
+
